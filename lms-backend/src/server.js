@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const userRoutes = require('./routes/users');
 const courseRoutes = require('./routes/courses');
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 // API chính
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);

@@ -1,7 +1,9 @@
 // src/api/index.js
 const API_URL = 'http://localhost:4000/api';
 
-// ===== USERS =====
+/* ================================
+    USERS
+================================ */
 export async function fetchUsers({ search = '', role = 'all' } = {}) {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -39,7 +41,9 @@ export async function deleteUser(id) {
     if (!res.ok) throw new Error('Failed to delete user');
 }
 
-// ===== COURSES (giữ nguyên nếu đang dùng) =====
+/* ================================
+    COURSES
+================================ */
 export async function fetchCourses({ search = '' } = {}) {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -57,5 +61,35 @@ export async function createCourse(payload) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.message || 'Failed to create course');
+    return data;
+}
+
+/* ================================
+    ADMIN LOGIN / REGISTER
+================================ */
+
+// LOGIN ADMIN (email + password + role='admin')
+export async function loginAdmin(body) {
+    const res = await fetch(`${API_URL}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Sai email hoặc mật khẩu");
+    return data;
+}
+
+// REGISTER ADMIN (tạo user có role='admin')
+export async function registerAdmin(body) {
+    const res = await fetch(`${API_URL}/admin/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Không thể tạo admin");
     return data;
 }
