@@ -58,12 +58,42 @@ export default function UserManagement() {
         setShowForm(true);
     };
 
+    // const handleFormSubmit = async () => {
+    //     if (!form.name || !form.email) {
+    //         alert('Vui lòng điền tên và email');
+    //         return;
+    //     }
+
+    //     if (formMode === 'create' && !form.password) {
+    //         alert('Vui lòng nhập mật khẩu');
+    //         return;
+    //     }
+
+    //     try {
+    //         setSubmitting(true);
+    //         if (formMode === 'create') {
+    //             await createUser(form);
+    //         } else {
+    //             const { password, ...rest } = form;
+    //             await updateUser(editingId, rest);
+    //         }
+    //         setShowForm(false);
+    //         resetForm();
+    //         await loadUsers();
+    //     } catch (err) {
+    //         console.error(err);
+    //         alert(err.message || 'Lỗi khi lưu tài khoản');
+    //     } finally {
+    //         setSubmitting(false);
+    //     }
+    // };
     const handleFormSubmit = async () => {
         if (!form.name || !form.email) {
             alert('Vui lòng điền tên và email');
             return;
         }
 
+        // Chỉ bắt buộc mật khẩu khi tạo mới
         if (formMode === 'create' && !form.password) {
             alert('Vui lòng nhập mật khẩu');
             return;
@@ -71,12 +101,19 @@ export default function UserManagement() {
 
         try {
             setSubmitting(true);
+
             if (formMode === 'create') {
+                // tạo mới: gửi full form
                 await createUser(form);
             } else {
-                const { password, ...rest } = form;
-                await updateUser(editingId, rest);
+                // edit: chỉ gửi password nếu có nhập (đổi mật khẩu)
+                const payload = { ...form };
+                if (!payload.password) {
+                    delete payload.password; // để trống thì không đổi mật khẩu
+                }
+                await updateUser(editingId, payload);
             }
+
             setShowForm(false);
             resetForm();
             await loadUsers();
@@ -88,13 +125,14 @@ export default function UserManagement() {
         }
     };
 
+
     const handleEditClick = (user) => {
         setFormMode('edit');
         setEditingId(user.id);
         setForm({
             name: user.name || '',
             email: user.email || '',
-            password: '',
+            password: user.password || '',
             phone: user.phone || '',
             role: user.role || 'student',
         });
@@ -526,41 +564,57 @@ export default function UserManagement() {
                                     />
                                 </div>
 
-                                {formMode === 'create' && (
-                                    <div>
-                                        <label
-                                            style={{
-                                                display: 'block',
-                                                fontSize: '14px',
-                                                fontWeight: '600',
-                                                color: '#1E293B',
-                                                marginBottom: '8px',
-                                            }}
-                                        >
-                                            🔐 Mật khẩu{' '}
+                                <div>
+                                    <label
+                                        style={{
+                                            display: 'block',
+                                            fontSize: '14px',
+                                            fontWeight: '600',
+                                            color: '#1E293B',
+                                            marginBottom: '8px',
+                                        }}
+                                    >
+                                        🔐 Mật khẩu{' '}
+                                        {formMode === 'create' ? (
                                             <span style={{ color: '#DC2626' }}>*</span>
-                                        </label>
-                                        <input
-                                            type="password"
-                                            value={form.password}
-                                            onChange={(e) =>
-                                                setForm({ ...form, password: e.target.value })
-                                            }
-                                            placeholder="Nhập mật khẩu"
-                                            disabled={submitting}
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 16px',
-                                                border: '1px solid #CBD5E1',
-                                                borderRadius: '8px',
-                                                fontSize: '16px',
-                                                outline: 'none',
-                                                background: submitting ? '#F8FAFC' : 'white',
-                                                boxSizing: 'border-box',
-                                            }}
-                                        />
-                                    </div>
-                                )}
+                                        ) : (
+                                            <span
+                                                style={{
+                                                    fontSize: '12px',
+                                                    color: '#6B7280',
+                                                    fontWeight: '400',
+                                                    marginLeft: '4px',
+                                                }}
+                                            >
+                                                (để trống nếu không đổi)
+                                            </span>
+                                        )}
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={form.password}
+                                        onChange={(e) =>
+                                            setForm({ ...form, password: e.target.value })
+                                        }
+                                        placeholder={
+                                            formMode === 'create'
+                                                ? 'Nhập mật khẩu'
+                                                : 'Nhập mật khẩu mới (tùy chọn)'
+                                        }
+                                        disabled={submitting}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 16px',
+                                            border: '1px solid #CBD5E1',
+                                            borderRadius: '8px',
+                                            fontSize: '16px',
+                                            outline: 'none',
+                                            background: submitting ? '#F8FAFC' : 'white',
+                                            boxSizing: 'border-box',
+                                        }}
+                                    />
+                                </div>
+
 
                                 <div>
                                     <label

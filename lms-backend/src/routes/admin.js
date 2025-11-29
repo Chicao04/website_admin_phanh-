@@ -1,6 +1,12 @@
 const express = require("express");
+const crypto = require("crypto");          // <- thêm
 const router = express.Router();
-const pool = require("../db");   // <-- DÙNG PostgreSQL pool
+const pool = require("../db");             // <-- DÙNG PostgreSQL pool
+
+// hàm hash MD5 dùng chung
+function md5(str) {
+    return crypto.createHash("md5").update(str).digest("hex");
+}
 
 // =============================
 // ADMIN LOGIN
@@ -18,10 +24,14 @@ router.post("/login", async (req, res) => {
                 role, 
                 created_at
             FROM users
-            WHERE email = $1 AND password = $2 AND role = 'admin'
+            WHERE email = $1 
+              AND password = $2 
+              AND role = 'admin'
             LIMIT 1;
         `;
-        const values = [email, password];
+
+        // hash password user nhập
+        const values = [email, md5(password)];
 
         const { rows } = await pool.query(sql, values);
 
@@ -52,7 +62,7 @@ router.post("/register", async (req, res) => {
             return res.status(400).json({ message: "Email đã tồn tại" });
         }
 
-        // 2. Insert admin
+        // 2. Insert admin (hash password trước khi lưu)
         const insertSql = `
             INSERT INTO users (name, email, phone, password, role, created_at)
             VALUES ($1, $2, $3, $4, 'admin', CURRENT_TIMESTAMP)
@@ -64,7 +74,7 @@ router.post("/register", async (req, res) => {
                 role,
                 created_at;
         `;
-        const values = [name, email, phone, password];
+        const values = [name, email, phone, md5(password)];
 
         const { rows } = await pool.query(insertSql, values);
 

@@ -1,5 +1,6 @@
 // src/api/index.js
-const API_URL = 'http://localhost:4000/api';
+// const API_URL = 'http://localhost:4000/api';
+const API_URL = 'http://203.145.47.207:4000/api';
 
 /* ================================
     USERS

@@ -1,7 +1,13 @@
 // src/routes/users.js
 const express = require('express');
+const crypto = require('crypto');              // <- thêm
 const router = express.Router();
 const pool = require('../db');
+
+// hàm hash MD5 dùng chung
+function md5(str) {
+    return crypto.createHash('md5').update(str).digest('hex');
+}
 
 // GET /api/users?search=&role=
 router.get('/', async (req, res) => {
@@ -62,6 +68,8 @@ router.post('/', async (req, res) => {
     }
 
     try {
+        const hashedPassword = md5(password);   // hash mật khẩu
+
         const query = `
       INSERT INTO users (name, email, phone, role, password, avatar_url, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
@@ -79,7 +87,7 @@ router.post('/', async (req, res) => {
             email,
             phone || null,
             role || 'student',
-            password,       // sau này bạn hash lại
+            hashedPassword,
             avatar_url || null,
         ];
 
@@ -91,10 +99,10 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT /api/users/:id
+// PUT /api/users/:id  (cho phép đổi mật khẩu nếu gửi kèm)
 router.put('/:id', async (req, res) => {
     const id = Number(req.params.id);
-    const { name, email, phone, role, avatar_url } = req.body;
+    const { name, email, phone, role, avatar_url, password } = req.body;
 
     try {
         const query = `
@@ -104,8 +112,9 @@ router.put('/:id', async (req, res) => {
         email      = COALESCE($2, email),
         phone      = COALESCE($3, phone),
         role       = COALESCE($4, role),
-        avatar_url = COALESCE($5, avatar_url)
-      WHERE user_id = $6
+        avatar_url = COALESCE($5, avatar_url),
+        password   = COALESCE($6, password)
+      WHERE user_id = $7
       RETURNING 
         user_id AS id,
         email,
@@ -115,12 +124,16 @@ router.put('/:id', async (req, res) => {
         avatar_url,
         created_at;
     `;
+
+        const hashedPassword = password ? md5(password) : null;
+
         const values = [
             name ?? null,
             email ?? null,
             phone ?? null,
             role ?? null,
             avatar_url ?? null,
+            hashedPassword,
             id,
         ];
 
