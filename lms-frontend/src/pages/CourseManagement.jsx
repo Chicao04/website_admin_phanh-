@@ -1,6 +1,12 @@
 // src/pages/CourseManagement.jsx
 import { useEffect, useState } from 'react';
-import { fetchCourses, createCourse, fetchUsers } from '../api';
+import {
+    fetchCourses,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    fetchUsers,
+} from '../api';
 
 export default function CourseManagement() {
     const [courses, setCourses] = useState([]);
@@ -12,7 +18,10 @@ export default function CourseManagement() {
     const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
-    const [newCourse, setNewCourse] = useState({
+    const [formMode, setFormMode] = useState('create'); // 'create' | 'edit'
+    const [editingId, setEditingId] = useState(null);
+
+    const [courseForm, setCourseForm] = useState({
         course_name: '',
         lecture_id: '',
         semester: '',
@@ -60,7 +69,9 @@ export default function CourseManagement() {
 
     // ===== FORM =====
     const resetForm = () => {
-        setNewCourse({
+        setFormMode('create');
+        setEditingId(null);
+        setCourseForm({
             course_name: '',
             lecture_id: '',
             semester: '',
@@ -73,9 +84,10 @@ export default function CourseManagement() {
         setShowForm(true);
     };
 
-    const handleCreateCourse = async (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
-        if (!newCourse.course_name.trim()) {
+
+        if (!courseForm.course_name.trim()) {
             alert('Tên khóa học là bắt buộc');
             return;
         }
@@ -83,20 +95,53 @@ export default function CourseManagement() {
         try {
             setSubmitting(true);
             const payload = {
-                ...newCourse,
-                lecture_id: newCourse.lecture_id
-                    ? Number(newCourse.lecture_id)
+                ...courseForm,
+                lecture_id: courseForm.lecture_id
+                    ? Number(courseForm.lecture_id)
                     : null,
             };
-            await createCourse(payload);
+
+            if (formMode === 'create') {
+                await createCourse(payload);
+            } else {
+                await updateCourse(editingId, payload);
+            }
+
             resetForm();
             setShowForm(false);
             await loadCourses();
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Tạo khóa học thất bại');
+            alert(err.message || 'Lưu khóa học thất bại');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleEditClick = (course) => {
+        setFormMode('edit');
+        setEditingId(course.id);
+        setCourseForm({
+            course_name: course.course_name || '',
+            lecture_id: course.lecture_id || '',
+            semester: course.semester || '',
+            description: course.description || '',
+        });
+        setShowForm(true);
+    };
+
+    const handleDeleteClick = async (course) => {
+        const ok = window.confirm(
+            `Bạn có chắc muốn xóa khóa học "${course.course_name}"?`
+        );
+        if (!ok) return;
+
+        try {
+            await deleteCourse(course.id);
+            await loadCourses();
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Xóa khóa học thất bại');
         }
     };
 
@@ -317,7 +362,7 @@ export default function CourseManagement() {
                     </div>
                 )}
 
-                {/* MODAL FORM THÊM KHÓA HỌC */}
+                {/* MODAL FORM THÊM / SỬA KHÓA HỌC */}
                 {showForm && (
                     <div
                         style={{
@@ -361,7 +406,9 @@ export default function CourseManagement() {
                                         margin: 0,
                                     }}
                                 >
-                                    ➕ Thêm khóa học mới
+                                    {formMode === 'create'
+                                        ? '➕ Thêm khóa học mới'
+                                        : '✏️ Chỉnh sửa khóa học'}
                                 </h2>
                                 <button
                                     onClick={() => {
@@ -382,8 +429,10 @@ export default function CourseManagement() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateCourse} style={{ padding: 24 }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                            <form onSubmit={handleFormSubmit} style={{ padding: 24 }}>
+                                <div
+                                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                                >
                                     <div>
                                         <label
                                             style={{
@@ -394,13 +443,14 @@ export default function CourseManagement() {
                                                 marginBottom: 8,
                                             }}
                                         >
-                                            📘 Tên khóa học <span style={{ color: '#DC2626' }}>*</span>
+                                            📘 Tên khóa học{' '}
+                                            <span style={{ color: '#DC2626' }}>*</span>
                                         </label>
                                         <input
                                             type="text"
-                                            value={newCourse.course_name}
+                                            value={courseForm.course_name}
                                             onChange={(e) =>
-                                                setNewCourse((prev) => ({
+                                                setCourseForm((prev) => ({
                                                     ...prev,
                                                     course_name: e.target.value,
                                                 }))
@@ -433,9 +483,9 @@ export default function CourseManagement() {
                                             👨‍🏫 Giảng viên phụ trách
                                         </label>
                                         <select
-                                            value={newCourse.lecture_id}
+                                            value={courseForm.lecture_id}
                                             onChange={(e) =>
-                                                setNewCourse((prev) => ({
+                                                setCourseForm((prev) => ({
                                                     ...prev,
                                                     lecture_id: e.target.value,
                                                 }))
@@ -475,9 +525,9 @@ export default function CourseManagement() {
                                         </label>
                                         <input
                                             type="text"
-                                            value={newCourse.semester}
+                                            value={courseForm.semester}
                                             onChange={(e) =>
-                                                setNewCourse((prev) => ({
+                                                setCourseForm((prev) => ({
                                                     ...prev,
                                                     semester: e.target.value,
                                                 }))
@@ -511,9 +561,9 @@ export default function CourseManagement() {
                                         </label>
                                         <textarea
                                             rows={3}
-                                            value={newCourse.description}
+                                            value={courseForm.description}
                                             onChange={(e) =>
-                                                setNewCourse((prev) => ({
+                                                setCourseForm((prev) => ({
                                                     ...prev,
                                                     description: e.target.value,
                                                 }))
@@ -559,7 +609,11 @@ export default function CourseManagement() {
                                                 opacity: submitting ? 0.5 : 1,
                                             }}
                                         >
-                                            {submitting ? '⏳ Đang lưu...' : '✓ Tạo khóa học'}
+                                            {submitting
+                                                ? '⏳ Đang lưu...'
+                                                : formMode === 'create'
+                                                    ? '✓ Tạo khóa học'
+                                                    : '✓ Lưu thay đổi'}
                                         </button>
                                         <button
                                             type="button"
@@ -665,6 +719,9 @@ export default function CourseManagement() {
                                         <th style={thStyle}>Học kỳ</th>
                                         <th style={thStyle}>Số SV</th>
                                         <th style={thStyle}>Ngày tạo</th>
+                                        <th style={{ ...thStyle, textAlign: 'center' }}>
+                                            Thao tác
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -691,7 +748,9 @@ export default function CourseManagement() {
                                                 <td style={tdStyleName}>{c.course_name}</td>
                                                 <td style={tdStyle}>
                                                     {c.lecturer_name || (
-                                                        <span style={{ color: '#9CA3AF' }}>Chưa gán</span>
+                                                        <span style={{ color: '#9CA3AF' }}>
+                                                            Chưa gán
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td style={{ padding: '16px 24px' }}>
@@ -723,6 +782,76 @@ export default function CourseManagement() {
                                                             day: '2-digit',
                                                         })
                                                         : '-'}
+                                                </td>
+                                                <td
+                                                    style={{
+                                                        padding: '16px 24px',
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
+                                                        }}
+                                                    >
+                                                        <button
+                                                            onClick={() => handleEditClick(c)}
+                                                            disabled={loading}
+                                                            style={{
+                                                                padding: '10px',
+                                                                color: '#B45309',
+                                                                background: '#FEF3C7',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                cursor: loading
+                                                                    ? 'not-allowed'
+                                                                    : 'pointer',
+                                                                fontSize: '18px',
+                                                                opacity: loading ? 0.5 : 1,
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                            (e.currentTarget.style.background =
+                                                                '#FCD34D')
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                            (e.currentTarget.style.background =
+                                                                '#FEF3C7')
+                                                            }
+                                                            title="Chỉnh sửa"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteClick(c)}
+                                                            disabled={loading}
+                                                            style={{
+                                                                padding: '10px',
+                                                                color: '#DC2626',
+                                                                background: '#FEE2E2',
+                                                                border: 'none',
+                                                                borderRadius: '8px',
+                                                                cursor: loading
+                                                                    ? 'not-allowed'
+                                                                    : 'pointer',
+                                                                fontSize: '18px',
+                                                                opacity: loading ? 0.5 : 1,
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                            (e.currentTarget.style.background =
+                                                                '#FECACA')
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                            (e.currentTarget.style.background =
+                                                                '#FEE2E2')
+                                                            }
+                                                            title="Xóa"
+                                                        >
+                                                            🗑️
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );

@@ -64,6 +64,31 @@ export async function createCourse(payload) {
     if (!res.ok) throw new Error(data.message || 'Failed to create course');
     return data;
 }
+// ví dụ trong src/api/index.js
+export async function updateCourse(id, body) {
+    const res = await fetch(`/api/courses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Error updating course');
+    }
+    return res.json();
+}
+
+export async function deleteCourse(id) {
+    const res = await fetch(`/api/courses/${id}`, {
+        method: 'DELETE',
+    });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Error deleting course');
+    }
+    return true;
+}
+
 
 /* ================================
     ADMIN LOGIN / REGISTER

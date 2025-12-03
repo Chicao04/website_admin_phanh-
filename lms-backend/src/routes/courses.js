@@ -85,4 +85,59 @@ router.post('/', async (req, res) => {
     }
 });
 
+// PUT /api/courses/:id
+router.put('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { course_name, lecture_id, semester, description } = req.body;
+
+  try {
+    const query = `
+      UPDATE course
+      SET
+        course_name = COALESCE($1, course_name),
+        lecture_id  = COALESCE($2, lecture_id),
+        semester    = COALESCE($3, semester),
+        description = COALESCE($4, description)
+      WHERE course_id = $5
+      RETURNING
+        course_id AS id,
+        course_name,
+        lecture_id,
+        semester,
+        description,
+        created_at;
+    `;
+
+    const values = [
+      course_name ?? null,
+      lecture_id ?? null,
+      semester ?? null,
+      description ?? null,
+      id,
+    ];
+
+    const { rows } = await pool.query(query, values);
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error updating course:', err);
+    res.status(500).json({ message: 'Error updating course' });
+  }
+});
+
+// DELETE /api/courses/:id
+router.delete('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+
+  try {
+    await pool.query('DELETE FROM course WHERE course_id = $1', [id]);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Error deleting course:', err);
+    res.status(500).json({ message: 'Error deleting course' });
+  }
+});
+
 module.exports = router;
