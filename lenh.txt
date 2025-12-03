@@ -1,0 +1,83 @@
+VPS
+Địa chỉ IP: 203.145.47.207
+
+Username:
+
+- Administrator (đối với VPS hệ điều hành Windows)
+
+- root (đối với VPS hệ điều hành Linux)
+
+Password: vps@A22102004 //reboot anhanh
+
+Server Name: vps-22102004
+
+user: anhanh
+password: 123
+
+postgresql://anhanh:123@203.145.47.207:5432/escore
+
+
+~/MyApp-Escore/app/src/main/java/com/example/escore/api
+python3 app.py
+
+
+1 là đăng nhập root nhập pass vps@A22102004
+2 là đăng nhập user:
+ssh anhanh@203.145.47.207
+pass là 123
+
+
+lms-Backend:
+
+Cài thư viện:
+        cd lms-backend
+        npm install
+Chạy dự án:
+pm2 logs lms-backend
+
+
+lms-Frontend:
+
+# Di chuyển vào thư mục frontend
+cd lms-frontend
+
+# Mở file cấu hình API để sửa
+nano src/api/index.js
+
+
+Trong giao diện chỉnh sửa (nano):
+Tìm dòng: const API_URL = 'http://localhost:4000/api';
+Sửa thành: const API_URL = 'http://203.145.47.207:4000/api'; (IP server bạn đã cung cấp).
+Bấm Ctrl+O, Enter để lưu, và Ctrl+X để thoát.
+
+# Cài đặt thư viện (nếu chưa cài)
+npm install
+
+# Đóng gói dự án (kết quả sẽ nằm trong thư mục 'dist')
+npm run build
+
+
+# Cài đặt serve (công cụ chạy web tĩnh) nếu chưa có
+sudo npm install -g serve
+
+# Chạy web ở cổng 5173 bằng PM2 (để nó không tắt khi bạn thoát VPS)
+pm2 start "npx serve -s dist -l 5173" --name lms-frontend
+
+# Lưu lại trạng thái PM2 để tự khởi động lại nếu VPS reset
+pm2 save
+
+# Mở cổng
+sudo ufw allow 5173
+
+
+Sau khi chạy xong lệnh trên, web của bạn đã online 24/7.
+Để xem nó có đang chạy không:
+pm2 status
+(Nếu thấy trạng thái là online màu xanh lá là ok)
+
+Khi nào bạn muốn TẮT nó:
+pm2 stop lms-frontend
+
+
+Để xóa hẳn nó khỏi danh sách chạy:
+pm2 delete lms-frontend
