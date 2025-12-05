@@ -66,16 +66,16 @@ export async function createCourse(payload) {
 }
 // ví dụ trong src/api/index.js
 export async function updateCourse(id, body) {
-    const res = await fetch(`/api/courses/${id}`, {
+    const res = await fetch(`${API_URL}/courses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || 'Error updating course');
     }
-    return res.json();
+    return data;
 }
 
 export async function deleteCourse(id) {
